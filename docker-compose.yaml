@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+  celery:
+    build: .
+    command: celery -A celery_practise.celery worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair
+#    celery -A celery_practise worker --loglevel=info --without-gossip --without-mingle --without-heartbeat -Ofair
+    volumes:
+      - ./project/:/usr/src/app/
+    depends_on:
+      - web
+      - rabbitmq1
+  rabbitmq1:
+    container_name: "rabbitmq1"
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - .:/app
+  flower:
+    image: mher/flower
+    command: celery --broker=amqp://guest:guest@rabbitmq1:15672/ flower -A celery_practise.celery --broker_api=amqp://guest:guest@rabbitmq1:15672
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq1:15672/
+      - CELERY_RESULT_BACKEND=amqp://rabbitmq1:5672/0
+      - FLOWER_PORT=8888
+    ports:
+      - 8888:8888
+    depends_on:
+      - rabbitmq1

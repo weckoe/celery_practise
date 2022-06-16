@@ -1,0 +1,4 @@
+celery==5.2.7
+Django==3.2
+flower==1.0.0
+pika==1.2.1
